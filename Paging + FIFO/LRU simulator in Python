@@ -1,0 +1,101 @@
+def simulate_fifo(ref_string, frame_count):
+    frames = []
+    faults = 0
+    pointer = 0   # points to next frame to replace
+
+    steps = []
+
+    for step, page in enumerate(ref_string, start=1):
+        replaced = None
+        fault = False
+
+        if page not in frames:
+            fault = True
+            faults += 1
+            # If there is still space, just append
+            if len(frames) < frame_count:
+                frames.append(page)
+            else:
+                # Replace using FIFO
+                replaced = frames[pointer]
+                frames[pointer] = page
+                pointer = (pointer + 1) % frame_count
+
+        # Record current state
+        steps.append({
+            "step": step,
+            "page": page,
+            "frames": frames.copy(),
+            "fault": fault,
+            "replaced": replaced
+        })
+
+    return steps, faults
+
+
+def simulate_lru(ref_string, frame_count):
+    frames = []
+    faults = 0
+    last_used = {}  # page -> last step index
+
+    steps = []
+
+    for step, page in enumerate(ref_string, start=1):
+        replaced = None
+        fault = False
+
+        if page not in frames:
+            fault = True
+            faults += 1
+            if len(frames) < frame_count:
+                frames.append(page)
+            else:
+                # Find least recently used page
+                lru_page = min(frames, key=lambda p: last_used.get(p, -1))
+                replaced = lru_page
+                idx = frames.index(lru_page)
+                frames[idx] = page
+
+        # Update last_used for this page
+        last_used[page] = step
+
+        steps.append({
+            "step": step,
+            "page": page,
+            "frames": frames.copy(),
+            "fault": fault,
+            "replaced": replaced
+        })
+
+    return steps, faults
+
+
+def print_simulation(steps, faults, algo_name):
+    print(f"\n=== {algo_name} Simulation ===")
+    print(f"{'Step':<5}{'Page':<6}{'Frames':<20}{'Fault':<8}{'Replaced'}")
+    print("-" * 50)
+    for s in steps:
+        frames_str = " ".join(str(p) for p in s["frames"])
+        fault_str = "Yes" if s["fault"] else "No"
+        rep = "-" if s["replaced"] is None else str(s["replaced"])
+        print(f"{s['step']:<5}{s['page']:<6}{frames_str:<20}{fault_str:<8}{rep}")
+    print(f"\nTotal Page Faults: {faults}\n")
+
+
+if __name__ == "__main__":
+    # -------- USER INPUT PART --------
+    # Example: you can later replace this with input() calls
+    # For now, use a sample reference string
+    ref_string = [7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3]
+    frame_count = 3
+
+    print("Reference string:", ref_string)
+    print("Number of frames:", frame_count)
+
+    # FIFO simulation
+    fifo_steps, fifo_faults = simulate_fifo(ref_string, frame_count)
+    print_simulation(fifo_steps, fifo_faults, "FIFO")
+
+    # LRU simulation
+    lru_steps, lru_faults = simulate_lru(ref_string, frame_count)
+    print_simulation(lru_steps, lru_faults, "LRU")
