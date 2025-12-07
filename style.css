@@ -1,0 +1,128 @@
+:root {
+  --bg: #020617;
+  --panel: #0f172a;
+  --allocated: #22c55e;
+  --free: #374151;
+  --text: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  background: radial-gradient(circle at top, #111827, #020617);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  background: var(--panel);
+  width: 800px;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  text-align: center;
+  color: #9ca3af;
+  margin-bottom: 20px;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.controls input {
+  padding: 8px;
+  width: 180px;
+  border-radius: 6px;
+  border: none;
+}
+
+.controls button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+#allocBtn {
+  background: #16a34a;
+  color: white;
+}
+
+#freeBtn {
+  background: #dc2626;
+  color: white;
+}
+
+.memory-wrapper {
+  margin-top: 10px;
+}
+
+.label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.heap {
+  background: #020617;
+  border: 1px solid #475569;
+  border-radius: 20px;
+  height: 40px;
+  display: flex;
+  overflow: hidden;
+  margin: 6px 0;
+}
+
+.block {
+  height: 100%;
+  transition: width 0.6s ease, background 0.3s ease;
+}
+
+.block.allocated {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+.block.free {
+  background: var(--free);
+}
+
+.info {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-around;
+  font-size: 0.85rem;
+}
+
+.info span {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 4px;
+}
+
+.info .allocated {
+  background: var(--allocated);
+}
+
+.info .free {
+  background: var(--free);
+}
