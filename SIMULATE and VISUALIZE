@@ -1,0 +1,303 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define EMPTY_FRAME -1
+
+// ---------- Utility to print frames ----------
+void printFrames(int *frames, int n_frames) {
+    printf("Frames: [ ");
+    for (int i = 0; i < n_frames; i++) {
+        if (frames[i] == EMPTY_FRAME) printf("- ");
+        else printf("%d ", frames[i]);
+    }
+    printf("]");
+}
+
+// ---------- FIFO Paging ----------
+void simulateFIFO(int *ref_str, int n_refs, int n_frames) {
+    int *frames = (int *)malloc(n_frames * sizeof(int));
+    if (frames == NULL) {
+        printf("Memory allocation failed!\n");
+        return;
+    }
+
+    for (int i = 0; i < n_frames; i++) {
+        frames[i] = EMPTY_FRAME;
+    }
+
+    int next_to_replace = 0;
+    int page_faults = 0;
+    int hits = 0;
+
+    printf("\n--- FIFO Page Replacement ---\n");
+    printf("Ref\t");
+    for (int i = 0; i < n_frames; i++) {
+        printf("F%d\t", i);
+    }
+    printf("Result\n");
+
+    for (int i = 0; i < n_refs; i++) {
+        int page = ref_str[i];
+        int hit = 0;
+
+        // Check if page already in a frame
+        for (int j = 0; j < n_frames; j++) {
+            if (frames[j] == page) {
+                hit = 1;
+                hits++;
+                break;
+            }
+        }
+
+        if (!hit) {
+            // Page fault
+            page_faults++;
+            frames[next_to_replace] = page;
+            next_to_replace = (next_to_replace + 1) % n_frames;
+        }
+
+        // Print step
+        printf("%d\t", page);
+        for (int j = 0; j < n_frames; j++) {
+            if (frames[j] == EMPTY_FRAME) printf("-\t");
+            else printf("%d\t", frames[j]);
+        }
+        if (hit) printf("Hit\n");
+        else printf("Fault\n");
+    }
+
+    printf("\nTotal Page Faults: %d\n", page_faults);
+    printf("Total Hits: %d\n", hits);
+    printf("Hit Ratio: %.2f\n", (float)hits / n_refs);
+
+    free(frames);
+}
+
+// ---------- LRU Paging ----------
+void simulateLRU(int *ref_str, int n_refs, int n_frames) {
+    int *frames = (int *)malloc(n_frames * sizeof(int));
+    int *last_used = (int *)malloc(n_frames * sizeof(int));
+
+    if (frames == NULL || last_used == NULL) {
+        printf("Memory allocation failed!\n");
+        free(frames);
+        free(last_used);
+        return;
+    }
+
+    for (int i = 0; i < n_frames; i++) {
+        frames[i] = EMPTY_FRAME;
+        last_used[i] = -1;
+    }
+
+    int page_faults = 0;
+    int hits = 0;
+
+    printf("\n--- LRU Page Replacement ---\n");
+    printf("Ref\t");
+    for (int i = 0; i < n_frames; i++) {
+        printf("F%d\t", i);
+    }
+    printf("Result\n");
+
+    for (int t = 0; t < n_refs; t++) {
+        int page = ref_str[t];
+        int hit = 0;
+        int hit_index = -1;
+
+        // Check if page already in frames
+        for (int j = 0; j < n_frames; j++) {
+            if (frames[j] == page) {
+                hit = 1;
+                hit_index = j;
+                break;
+            }
+        }
+
+        if (hit) {
+            hits++;
+            last_used[hit_index] = t; // update last used time
+        } else {
+            page_faults++;
+
+            // Find empty frame first
+            int placed = 0;
+            for (int j = 0; j < n_frames; j++) {
+                if (frames[j] == EMPTY_FRAME) {
+                    frames[j] = page;
+                    last_used[j] = t;
+                    placed = 1;
+                    break;
+                }
+            }
+
+            if (!placed) {
+                // No empty frame, replace LRU frame
+                int lru_index = 0;
+                int min_time = last_used[0];
+                for (int j = 1; j < n_frames; j++) {
+                    if (last_used[j] < min_time) {
+                        min_time = last_used[j];
+                        lru_index = j;
+                    }
+                }
+                frames[lru_index] = page;
+                last_used[lru_index] = t;
+            }
+        }
+
+        // Print step
+        printf("%d\t", page);
+        for (int j = 0; j < n_frames; j++) {
+            if (frames[j] == EMPTY_FRAME) printf("-\t");
+            else printf("%d\t", frames[j]);
+        }
+        if (hit) printf("Hit\n");
+        else printf("Fault\n");
+    }
+
+    printf("\nTotal Page Faults: %d\n", page_faults);
+    printf("Total Hits: %d\n", hits);
+    printf("Hit Ratio: %.2f\n", (float)hits / n_refs);
+
+    free(frames);
+    free(last_used);
+}
+
+// ---------- Paging Menu ----------
+void pagingModule() {
+    int n_frames, n_refs;
+    printf("\n--- Paging Visualizer ---\n");
+    printf("Enter number of frames: ");
+    scanf("%d", &n_frames);
+    printf("Enter length of reference string: ");
+    scanf("%d", &n_refs);
+
+    int *ref_str = (int *)malloc(n_refs * sizeof(int));
+    if (ref_str == NULL) {
+        printf("Memory allocation failed!\n");
+        return;
+    }
+
+    printf("Enter reference string (space separated page numbers):\n");
+    for (int i = 0; i < n_refs; i++) {
+        scanf("%d", &ref_str[i]);
+    }
+
+    int choice;
+    do {
+        printf("\n--- Paging Menu ---\n");
+        printf("1. Simulate FIFO\n");
+        printf("2. Simulate LRU\n");
+        printf("3. Back to Main Menu\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                simulateFIFO(ref_str, n_refs, n_frames);
+                break;
+            case 2:
+                simulateLRU(ref_str, n_refs, n_frames);
+                break;
+            case 3:
+                break;
+            default:
+                printf("Invalid choice!\n");
+        }
+    } while (choice != 3);
+
+    free(ref_str);
+}
+
+// ---------- Segmentation Visualizer ----------
+void segmentationModule() {
+    int n_segments;
+    printf("\n--- Segmentation Visualizer ---\n");
+    printf("Enter number of segments: ");
+    scanf("%d", &n_segments);
+
+    int *base = (int *)malloc(n_segments * sizeof(int));
+    int *limit = (int *)malloc(n_segments * sizeof(int));
+
+    if (base == NULL || limit == NULL) {
+        printf("Memory allocation failed!\n");
+        free(base);
+        free(limit);
+        return;
+    }
+
+    printf("Enter base and limit for each segment:\n");
+    for (int i = 0; i < n_segments; i++) {
+        printf("Segment %d base: ", i);
+        scanf("%d", &base[i]);
+        printf("Segment %d limit (size): ", i);
+        scanf("%d", &limit[i]);
+    }
+
+    int choice;
+    do {
+        int seg_no, offset;
+        printf("\n--- Logical to Physical Address Translation ---\n");
+        printf("1. Translate logical address\n");
+        printf("2. Back to Main Menu\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+
+        if (choice == 1) {
+            printf("Enter segment number: ");
+            scanf("%d", &seg_no);
+            printf("Enter offset: ");
+            scanf("%d", &offset);
+
+            if (seg_no < 0 || seg_no >= n_segments) {
+                printf("Invalid segment number!\n");
+            } else if (offset < 0 || offset >= limit[seg_no]) {
+                printf("Segmentation fault: invalid offset (outside segment limit)\n");
+            } else {
+                int physical_addr = base[seg_no] + offset;
+                printf("Physical Address = %d (base %d + offset %d)\n",
+                       physical_addr, base[seg_no], offset);
+            }
+        } else if (choice != 2) {
+            printf("Invalid choice!\n");
+        }
+
+    } while (choice != 2);
+
+    free(base);
+    free(limit);
+}
+
+// ---------- Main Menu ----------
+int main() {
+    int choice;
+
+    do {
+        printf("\n==============================\n");
+        printf(" Dynamic Memory Management Visualizer\n");
+        printf("==============================\n");
+        printf("1. Paging (FIFO / LRU)\n");
+        printf("2. Segmentation\n");
+        printf("3. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                pagingModule();
+                break;
+            case 2:
+                segmentationModule();
+                break;
+            case 3:
+                printf("Exiting...\n");
+                break;
+            default:
+                printf("Invalid choice! Try again.\n");
+        }
+
+    } while (choice != 3);
+
+    return 0;
+}
