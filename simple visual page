@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Memory Allocation Visualizer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at top, #111827, #020617);
+      color: #e5e7eb;
+    }
+
+    .container {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 16px;
+      padding: 20px 24px;
+      max-width: 900px;
+      width: 100%;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 16px;
+    }
+
+    .title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      font-size: 0.8rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+    }
+
+    .c-allocated { background: #22c55e; }
+    .c-free      { background: #4b5563; }
+    .c-stack     { background: #3b82f6; }
+    .c-heap      { background: #f97316; }
+    .c-code      { background: #a855f7; }
+
+    .memory-layout {
+      display: grid;
+      grid-template-columns: 1.2fr 2fr;
+      gap: 24px;
+    }
+
+    /* left text panel */
+    .info {
+      font-size: 0.9rem;
+      color: #d1d5db;
+      line-height: 1.5;
+    }
+
+    .info h3 {
+      font-size: 1rem;
+      margin-bottom: 6px;
+      color: #e5e7eb;
+    }
+
+    .info p {
+      margin-bottom: 8px;
+    }
+
+    .info ul {
+      margin-left: 16px;
+      margin-bottom: 8px;
+    }
+
+    .info li {
+      margin-bottom: 4px;
+    }
+
+    .info strong {
+      color: #f9fafb;
+    }
+
+    /* right: vertical memory bar */
+    .memory {
+      background: #020617;
+      border-radius: 12px;
+      padding: 12px 10px;
+      border: 1px solid rgba(75, 85, 99, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.75rem;
+      position: relative;
+    }
+
+    .memory-label-top,
+    .memory-label-bottom {
+      font-size: 0.7rem;
+      color: #9ca3af;
+      text-align: right;
+    }
+
+    .memory-block {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .memory-block-bar {
+      flex: 1;
+      height: 26px;
+      border-radius: 999px;
+      background: #111827;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .segment {
+      height: 100%;
+      border-right: 1px solid rgba(15, 23, 42, 0.8);
+    }
+
+    .segment:last-child {
+      border-right: none;
+    }
+
+    /* specific sections */
+    .code-section .segment {
+      background: linear-gradient(90deg, #581c87, #a855f7);
+    }
+
+    .stack-section .segment {
+      background: linear-gradient(90deg, #1d4ed8, #60a5fa);
+    }
+
+    .heap-section .segment.free {
+      background: #374151;
+    }
+
+    .heap-section .segment.allocated {
+      background: linear-gradient(90deg, #16a34a, #22c55e);
+    }
+
+    .block-label {
+      min-width: 70px;
+      text-align: right;
+      color: #9ca3af;
+    }
+
+    .addr {
+      font-size: 0.7rem;
+      color: #6b7280;
+      text-align: right;
+    }
+
+    .note {
+      margin-top: 10px;
+      font-size: 0.76rem;
+      color: #9ca3af;
+      text-align: right;
+    }
+
+    @media (max-width: 720px) {
+      .memory-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <div class="title">Memory Allocation Visualizer</div>
+        <div class="subtitle">Conceptual view of Code, Stack, Heap & free space</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <span class="legend-color c-code"></span> Code / Data section
+      </div>
+      <div class="legend-item">
+        <span class="legend-color c-stack"></span> Stack
+      </div>
+      <div class="legend-item">
+        <span class="legend-color c-heap"></span> Heap (allocated)
+      </div>
+      <div class="legend-item">
+        <span class="legend-color c-free"></span> Heap (free)
+      </div>
+    </div>
+
+    <div class="memory-layout">
+      <!-- Left side: explanation text -->
+      <div class="info">
+        <h3>How memory is organized in a process</h3>
+        <p>A typical process in memory is divided into logical regions:</p>
+        <ul>
+          <li><strong>Code / Text:</strong> program instructions (fixed size)</li>
+          <li><strong>Data:</strong> global and static variables</li>
+          <li><strong>Heap:</strong> grows upward; used for <code>malloc / calloc / realloc</code></li>
+          <li><strong>Stack:</strong> grows downward; function calls, local variables</li>
+        </ul>
+
+        <p>
+          When you call <code>malloc()</code>, memory is reserved from the
+          <strong>heap area</strong>. When you return from a function, its
+          local variables are removed from the <strong>stack area</strong>.
+        </p>
+
+        <p>
+          This diagram is a simplified visual showing which parts of memory are
+          already allocated and which parts are still free.
+        </p>
+      </div>
+
+      <!-- Right side: memory bar -->
+      <div class="memory">
+        <div class="memory-label-top">High Address</div>
+
+        <!-- Stack section -->
+        <div class="memory-block stack-section">
+          <div class="block-label">Stack</div>
+          <div class="memory-block-bar">
+            <div class="segment" style="width: 40%"></div>
+          </div>
+        </div>
+
+        <!-- Free gap between stack and heap (not always, but for visual) -->
+        <div class="memory-block">
+          <div class="block-label">Unused</div>
+          <div class="memory-block-bar">
+            <div class="segment" style="width: 100%; background:#020617;"></div>
+          </div>
+        </div>
+
+        <!-- Heap section -->
+        <div class="memory-block heap-section">
+          <div class="block-label">Heap</div>
+          <div class="memory-block-bar">
+            <!-- allocated blocks -->
+            <div class="segment allocated" style="width: 25%"></div>
+            <div class="segment allocated" style="width: 15%"></div>
+            <!-- free space -->
+            <div class="segment free" style="width: 60%"></div>
+          </div>
+        </div>
+
+        <!-- Data / Code section -->
+        <div class="memory-block code-section">
+          <div class="block-label">Code + Data</div>
+          <div class="memory-block-bar">
+            <div class="segment" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <div class="memory-label-bottom">Low Address</div>
+
+        <div class="note">
+          Example: green heap blocks ≈ dynamically allocated memory via <code>malloc()</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
