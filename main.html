@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dynamic Memory Allocation Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>Dynamic Memory Allocation Visualizer</h1>
+    <p class="subtitle">
+      Simulation of Heap Allocation using HTML, CSS & JavaScript
+    </p>
+
+    <!-- Controls -->
+    <div class="controls">
+      <input type="number" id="sizeInput" placeholder="Enter block size (%)" />
+      <button id="allocBtn">Allocate (malloc)</button>
+      <button id="freeBtn">Free Last</button>
+    </div>
+
+    <!-- Memory Bar -->
+    <div class="memory-wrapper">
+      <div class="label high">High Address</div>
+
+      <div id="heap" class="heap"></div>
+
+      <div class="label low">Low Address</div>
+    </div>
+
+    <!-- Info -->
+    <div class="info">
+      <p><span class="allocated"></span> Allocated Memory</p>
+      <p><span class="free"></span> Free Memory</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
